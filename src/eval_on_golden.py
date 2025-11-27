@@ -14,10 +14,12 @@ Later, for finetuned model, just change --model-name-or-path and --run-id.
 """
 import argparse
 import json
+import time
 from pathlib import Path
 from typing import Any, Dict, List
-import torch
 
+import torch
+from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from metrics import (add_lengths_and_flags, compute_metrics, write_predictions,
@@ -63,7 +65,7 @@ def generate_answers(
 
     results = []
 
-    for ex in golden_examples:
+    for ex in tqdm(golden_examples, desc="Generating answers", unit="example"):
         q = ex["question"]
         gold_a = ex["answer"]
 
@@ -193,6 +195,9 @@ if __name__ == "__main__":
         tokenizer.eos_token_id = tokenizer.pad_token_id
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path)
 
+    # Record start time
+    start_time = time.time()
+
     # Generate answers
     predictions = generate_answers(
         model=model,
@@ -210,7 +215,11 @@ if __name__ == "__main__":
     # Compute metrics (BERTScore, ROUGE-L, safety rates)
     metrics = compute_metrics(predictions)
 
-    # Write outputs
+    elapsed = time.time() - start_time
+    print(f"[INFO] Generation + metrics time: {elapsed:.2f} seconds "
+          f"({elapsed / len(predictions):.3f} s/example)")
+
+    # Write predictions and metrics summary
     write_predictions(preds_path, predictions, args.model_name_or_path, args.run_id)
     write_summary(
         summary_path,
@@ -218,6 +227,7 @@ if __name__ == "__main__":
         run_id=args.run_id,
         num_examples=len(predictions),
         metrics=metrics,
+        total_gen_time_in_secs=elapsed,
     )
 
     print(f"[INFO] Wrote predictions to {preds_path}")

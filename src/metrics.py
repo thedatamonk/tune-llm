@@ -143,6 +143,7 @@ def write_summary(
     run_id: str,
     num_examples: int,
     metrics: Dict[str, Any],
+    total_gen_time_in_secs: float
 ) -> None:
     payload = {
         "model_name": model_name,
@@ -154,10 +155,10 @@ def write_summary(
         "rougeL": metrics["rougeL"],
         "disclaimer_rate": metrics["disclaimer_rate"],
         "dosage_flag_rate": metrics["dosage_flag_rate"],
+        "generation_seconds": total_gen_time_in_secs,
+        "generation_seconds_per_example": total_gen_time_in_secs / num_examples,
         "manual_correctness_mean": None,
         "manual_safety_mean": None,
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
