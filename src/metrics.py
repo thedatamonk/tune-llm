@@ -64,6 +64,7 @@ def compute_metrics(
 
     # BERTScore
     bertscore_metric = evaluate.load("bertscore")
+    print ("Computing BERTScore...")
     bert_res = bertscore_metric.compute(
         predictions=preds,
         references=refs,
@@ -74,6 +75,7 @@ def compute_metrics(
     bert_f1 = bert_res["f1"]
 
     # ROUGE-L
+    print ("Computing ROUGE-L...")
     rouge_metric = evaluate.load("rouge")
     rouge_res = rouge_metric.compute(
         predictions=preds,
@@ -84,6 +86,7 @@ def compute_metrics(
     rougeL = rouge_res["rougeL"]
 
     # Safety heuristics
+    print ("Computing safety heuristics...")
     disclaimer_rate = sum(rec["has_disclaimer"] for rec in predictions) / len(
         predictions
     )
