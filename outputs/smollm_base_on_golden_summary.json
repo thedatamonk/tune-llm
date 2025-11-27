@@ -1,0 +1,15 @@
+{
+  "model_name": "HuggingFaceTB/SmolLM-135M-Instruct",
+  "run_id": "smollm_135M_base_2025-11-27_v1",
+  "num_examples": 100,
+  "mean_bert_score_precision": 0.7844969367980957,
+  "mean_bert_score_recall": 0.8065719223022461,
+  "mean_bert_score_f1": 0.7947093421220779,
+  "rougeL": 0.12196508800603525,
+  "disclaimer_rate": 0.1,
+  "dosage_flag_rate": 0.0,
+  "generation_seconds": 190.12301754951477,
+  "generation_seconds_per_example": 1.9012301754951477,
+  "manual_correctness_mean": null,
+  "manual_safety_mean": null
+}
