@@ -58,6 +58,7 @@ def generate_answers(
     max_new_tokens: int,
     temperature: float,
     top_p: float,
+    batch_size: int = 8,
 ) -> List[Dict[str, Any]]:
     
     model.to(device)
@@ -65,23 +66,33 @@ def generate_answers(
 
     results = []
 
-    for ex in tqdm(golden_examples, desc="Generating answers", unit="example"):
-        q = ex["question"]
-        gold_a = ex["answer"]
+    # this function will yield a new batch everytime it's called
+    def chunked(iterable, n):
+        for i in range(0, len(iterable), n):
+            yield iterable[i : i + n]
 
-        prompt = build_prompt(q)
+    for batch in tqdm(list(chunked(golden_examples, batch_size)), desc="Generating answers", unit="batch"):
+        # build prompts for the batch inputs
+        prompts = [build_prompt(ex["question"]) for ex in batch]
 
-        # tokenize the input prompt
         inputs = tokenizer(
-            prompt,
+            prompts,
             return_tensors="pt",
+            padding=True,
             truncation=True,
-            max_length=1024,
+            max_length=512,
         ).to(device)
 
-        # generate output
+        input_ids = inputs["input_ids"]
+        
+        # real (non-pad) lengths per row
+        pad_id = tokenizer.pad_token_id
+
+        # shape: [batch_size]
+        input_lengths = (input_ids != pad_id).sum(dim=1)
+
         with torch.no_grad():
-            output_ids = model.generate(
+            outputs = model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=(temperature > 0),
@@ -90,20 +101,29 @@ def generate_answers(
                 pad_token_id=tokenizer.eos_token_id,
             )
 
-            # Extract only the generated continuation
-        generated_ids = output_ids[0]
-        input_len = inputs["input_ids"].shape[1]
-        gen_only_ids = generated_ids[input_len:]        # extract generated tokens only; not the input prompt tokens
-        model_answer = tokenizer.decode(gen_only_ids, skip_special_tokens=True).strip()         # deode the generated tokens
+        # decode per example in the batch
+        for ex, out_ids, in_len in zip(
+            batch,
+            outputs,
+            input_lengths,
+        ):
+            # keep only newly generated tokens
+            gen_only_ids = out_ids[int(in_len):]
 
-        result = {
-            "id": ex["id"],
-            "question": q,
-            "gold_answer": gold_a,
-            "model_answer": model_answer,
-            "question_type": ex.get("question_type", None),
-        }
-        results.append(result)
+            text = tokenizer.decode(
+                gen_only_ids,
+                skip_special_tokens=True,
+            ).strip()
+
+            results.append(
+                {
+                    "id": ex["id"],
+                    "question": ex["question"],
+                    "gold_answer": ex["answer"],
+                    "model_answer": text,
+                    "question_type": ex.get("question_type", None),
+                }
+            )
 
     return results
 
@@ -167,6 +187,14 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Top-p for nucleus sampling.",
     )
+
+    p.add_argument(
+        "--batch-size",
+        type=int,
+        default=8,
+        help="Batch size for batched generation.",
+    )
+
     return p.parse_args()
 
 if __name__ == "__main__":
@@ -190,9 +218,17 @@ if __name__ == "__main__":
     # Load model + tokenizer
     print(f"[INFO] Loading model: {args.model_name_or_path}")
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
+    tokenizer.padding_side = "left"     # we need to set this for decoder-only models
+
+
     # ensure eos_token_id
-    if tokenizer.eos_token_id is None and tokenizer.pad_token_id is not None:
-        tokenizer.eos_token_id = tokenizer.pad_token_id
+    # if tokenizer.eos_token_id is None and tokenizer.pad_token_id is not None:
+    #     tokenizer.eos_token_id = tokenizer.pad_token_id
+
+    # if no pad token, use eos token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path)
 
     # Record start time
