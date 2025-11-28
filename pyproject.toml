@@ -11,8 +11,10 @@ dependencies = [
     "evaluate>=0.4.6",
     "hf-transfer>=0.1.9",
     "nltk>=3.9.2",
+    "peft>=0.18.0",
     "rouge-score>=0.1.2",
     "torch>=2.9.1",
     "tqdm>=4.67.1",
     "transformers>=4.57.3",
+    "trl>=0.25.1",
 ]
