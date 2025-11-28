@@ -243,6 +243,7 @@ if __name__ == "__main__":
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         top_p=args.top_p,
+        batch_size=args.batch_size,
     )
 
     # Add length + safety flags
