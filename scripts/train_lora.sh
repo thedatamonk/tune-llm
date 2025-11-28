@@ -5,10 +5,15 @@ python src/train_lora.py \
   --train-jsonl ./datasets/medquad_train_sft.jsonl \
   --val-jsonl ./datasets/medquad_val_sft.jsonl \
   --output-dir ./finetuned_outputs/smollm_135m_medquad_lora \
-  --max-seq-length 512 \
+  --max-seq-length 256 \
   --per-device-train-batch-size 4 \
   --gradient-accumulation-steps 8 \
   --learning-rate 2e-4 \
   --num-train-epochs 2 \
   --lora-rank 8 \
-  --use-bf16
+  --use-bf16 \
+  --evaluation-strategy "steps" \
+  --eval-steps 300 \
+  --save-steps 300 \
+  --logging-steps 100 \
+

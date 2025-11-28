@@ -9,7 +9,7 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
 )
-from trl import SFTTrainer
+from trl import SFTTrainer, SFTConfig
 
 def parse_args():
     parser = argparse.ArgumentParser(description="LoRA fine-tuning of SmolLM on MedQuad SFT data.")
@@ -240,7 +240,28 @@ def main():
     model = get_peft_model(model, lora_config)
 
     # 5. Training arguments
-    training_args = TrainingArguments(
+    # training_args = TrainingArguments(
+    #     output_dir=str(output_dir),
+    #     per_device_train_batch_size=args.per_device_train_batch_size,
+    #     per_device_eval_batch_size=args.per_device_eval_batch_size,
+    #     gradient_accumulation_steps=args.gradient_accumulation_steps,
+    #     learning_rate=args.learning_rate,
+    #     num_train_epochs=args.num_train_epochs,
+    #     logging_steps=args.logging_steps,
+    #     save_steps=args.save_steps,
+    #     save_strategy=args.evaluation_strategy,
+    #     eval_strategy=args.evaluation_strategy,
+    #     eval_steps=args.eval_steps,
+    #     save_total_limit=3,
+    #     bf16=args.use_bf16,
+    #     fp16=args.use_fp16,
+    #     report_to=["none"],  # or ["wandb"] if you want
+    #     load_best_model_at_end=((not args.sanity_check) and args.evaluation_strategy != "no"),
+    #     metric_for_best_model="eval_loss",
+    #     greater_is_better=False,
+    # )
+
+    sft_config = SFTConfig(
         output_dir=str(output_dir),
         per_device_train_batch_size=args.per_device_train_batch_size,
         per_device_eval_batch_size=args.per_device_eval_batch_size,
@@ -255,18 +276,23 @@ def main():
         bf16=args.use_bf16,
         fp16=args.use_fp16,
         report_to=["none"],  # or ["wandb"] if you want
-        load_best_model_at_end=True if args.evaluation_strategy != "no" else False,
-        metric_for_best_model=None,
+        max_length=args.max_seq_length,   # e.g. 512 / 1024 / 2048
+        packing=False,                        # 1 example per sequence
+        load_best_model_at_end=(
+            (not args.sanity_check) and args.evaluation_strategy != "no"
+        ),
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
     )
 
     if args.sanity_check:
-        training_args.max_steps = args.sanity_max_steps
-        training_args.num_train_epochs = 1
-        training_args.save_strategy = "steps"
-        training_args.eval_strategy = "steps"
+        sft_config.max_steps = args.sanity_max_steps
+        sft_config.num_train_epochs = 1
+        sft_config.save_strategy = "no"
+        sft_config.eval_strategy = "steps"
         print("Sanity mode: overriding training settings:")
-        print(f"  max_steps = {training_args.max_steps}")
-        print(f"  save_strategy = {training_args.save_strategy}")
+        print(f"  max_steps = {sft_config.max_steps}")
+        print(f"  save_strategy = {sft_config.save_strategy}")
 
 
     # 6. SFTTrainer
@@ -275,7 +301,7 @@ def main():
         processing_class=tokenizer,
         train_dataset=train_dataset,
         eval_dataset=val_dataset if args.evaluation_strategy != "no" else None,
-        args=training_args,
+        args=sft_config,
         # formatting_func=formatting_prompts_func,
         # max_seq_length=args.max_seq_length,
         # packing=False,  # Keep one example per sequence for clarity
