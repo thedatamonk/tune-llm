@@ -10,6 +10,7 @@ dependencies = [
     "datasets>=4.4.1",
     "evaluate>=0.4.6",
     "hf-transfer>=0.1.9",
+    "huggingface-hub[cli]>=0.36.0",
     "nltk>=3.9.2",
     "peft>=0.18.0",
     "rouge-score>=0.1.2",
