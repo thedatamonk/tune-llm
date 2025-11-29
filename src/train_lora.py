@@ -7,7 +7,6 @@ from peft import LoraConfig, get_peft_model
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    TrainingArguments,
 )
 from trl import SFTTrainer, SFTConfig
 
@@ -239,28 +238,6 @@ def main():
     # Wrap model in PEFT adapter
     model = get_peft_model(model, lora_config)
 
-    # 5. Training arguments
-    # training_args = TrainingArguments(
-    #     output_dir=str(output_dir),
-    #     per_device_train_batch_size=args.per_device_train_batch_size,
-    #     per_device_eval_batch_size=args.per_device_eval_batch_size,
-    #     gradient_accumulation_steps=args.gradient_accumulation_steps,
-    #     learning_rate=args.learning_rate,
-    #     num_train_epochs=args.num_train_epochs,
-    #     logging_steps=args.logging_steps,
-    #     save_steps=args.save_steps,
-    #     save_strategy=args.evaluation_strategy,
-    #     eval_strategy=args.evaluation_strategy,
-    #     eval_steps=args.eval_steps,
-    #     save_total_limit=3,
-    #     bf16=args.use_bf16,
-    #     fp16=args.use_fp16,
-    #     report_to=["none"],  # or ["wandb"] if you want
-    #     load_best_model_at_end=((not args.sanity_check) and args.evaluation_strategy != "no"),
-    #     metric_for_best_model="eval_loss",
-    #     greater_is_better=False,
-    # )
-
     sft_config = SFTConfig(
         output_dir=str(output_dir),
         per_device_train_batch_size=args.per_device_train_batch_size,
@@ -275,7 +252,8 @@ def main():
         save_total_limit=3,
         bf16=args.use_bf16,
         fp16=args.use_fp16,
-        report_to=["none"],  # or ["wandb"] if you want
+        report_to=["tensorboard"],
+        logging_dir=str(output_dir / "tb_logs"),
         max_length=args.max_seq_length,   # e.g. 512 / 1024 / 2048
         packing=False,                        # 1 example per sequence
         load_best_model_at_end=(
