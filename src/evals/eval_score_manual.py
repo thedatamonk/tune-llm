@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Dict, List
 
-from .eval_config import PATHS
+from eval_config import PATHS
 
 
 def _read_jsonl(path: Path) -> List[Dict]:

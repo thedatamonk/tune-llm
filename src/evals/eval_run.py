@@ -7,10 +7,10 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from .eval_config import (BASE_MODEL_NAME_OR_PATH, BATCH_SIZE, DEVICE,
+from eval_config import (BASE_MODEL_NAME_OR_PATH, BATCH_SIZE, DEVICE,
                           GEN_KWARGS, LORA_ADAPTER_PATH, MAX_INPUT_LENGTH,
                           PATHS, build_prompt)
-from .eval_datasets import load_dataset
+from eval_datasets import load_dataset
 
 def load_models_and_tokenizer():
     """
@@ -75,6 +75,7 @@ def generate_batch(
 
     input_ids = enc["input_ids"].to(DEVICE)
     attention_mask = enc["attention_mask"].to(DEVICE)
+    padded_seq_len = input_ids.size(1)
 
 
     gen_kwargs = dict(GEN_KWARGS)
@@ -82,7 +83,7 @@ def generate_batch(
         gen_kwargs["pad_token_id"] = tokenizer.pad_token_id
 
     outputs = model.generate(
-        input_ids=input_ids,
+        input_ids=input_ids,    
         attention_mask=attention_mask,
         **gen_kwargs,
     )
@@ -90,8 +91,7 @@ def generate_batch(
     # Decode answers by stripping the prompt tokens
     answers: List[str] = []
     for i in range(outputs.size(0)):
-        input_len = int(attention_mask[i].sum().item())
-        generated_ids = outputs[i, input_len:]
+        generated_ids = outputs[i, padded_seq_len:]
         if generated_ids.numel() == 0:
             text = ""
         else:

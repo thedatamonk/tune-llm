@@ -3,7 +3,7 @@
 import json
 from typing import Dict, List, Optional
 
-from .eval_config import PATHS
+from eval_config import PATHS
 
 Example = Dict  # each example is a dict with id, source, question, answer, meta(optional)
 

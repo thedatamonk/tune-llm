@@ -3,7 +3,7 @@ from typing import Dict
 import torch
 
 # ==== MODEL + ADAPTER PATHS (EDIT THESE) ====
-BASE_MODEL_NAME_OR_PATH = "HuggingFaceTB/SmolLM-1.7B"
+BASE_MODEL_NAME_OR_PATH = "HuggingFaceTB/SmolLM-135M-Instruct"
 LORA_ADAPTER_PATH = "finetuned_outputs/smollm_135m_medquad_lora/final_adapter"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -11,14 +11,12 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ==== GENERATION SETTINGS ====
 GEN_KWARGS: Dict = {
     "max_new_tokens": 256,
-    "temperature": 0.2,
-    "top_p": 0.9,
     "do_sample": False,  # deterministic for eval; set True if you want sampling
     "num_beams": 1,
     "pad_token_id": None,  # will be filled from tokenizer.eos_token_id at runtime if None
 }
 
-BATCH_SIZE = 4
+BATCH_SIZE = 16
 MAX_INPUT_LENGTH = 2048  # make sure this matches your training setup / base model
 
 # ==== SYSTEM PROMPT / CHAT TEMPLATE ====
@@ -49,7 +47,7 @@ class Paths:
     medquad_val: str = "datasets/medquad_val_sft.jsonl"
     medquad_golden: str = "datasets/golden_medquad.jsonl"
     handwritten_eval_v1: str = "datasets/handwritten_eval_v1.jsonl"
-    safety_probes_v1: str = "data/safety_probes_v1.jsonl"
+    safety_probes_v1: str = "datasets/safety_probes_v1.jsonl"
 
     outputs_dir: str = "outputs"
 
